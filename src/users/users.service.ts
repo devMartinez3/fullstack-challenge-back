@@ -38,7 +38,6 @@ export interface ReqResListResponse {
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
-  private readonly reqresUrl = process.env.REQRES_URL;
 
   constructor(
     private prisma: PrismaService,
@@ -47,6 +46,9 @@ export class UsersService {
   ) {}
 
   async importUserFromReqRes(id: number): Promise<User> {
+    const reqresUrl = this.configService.get<string>('REQRES_URL');
+    const apiKey = this.configService.get<string>('SECRET_KEY');
+
     // 1. Validate if user already exists
     const existingUser = await this.prisma.user.findUnique({
       where: { id },
@@ -58,12 +60,10 @@ export class UsersService {
       );
     }
 
-    const apiKey = this.configService.get<string>('SECRET_KEY');
-
-    // 2. Fetch from ReqRes (Agregado tipado estricto a la petición)
+    // 2. Fetch from ReqRes
     const response = await firstValueFrom(
       this.httpService
-        .get<ReqResSingleResponse>(`${this.reqresUrl}/${id}`, {
+        .get<ReqResSingleResponse>(`${reqresUrl}/users/${id}`, {
           headers: { 'x-api-key': apiKey },
         })
         .pipe(
@@ -83,6 +83,12 @@ export class UsersService {
 
     const reqResUser = response.data.data;
 
+    if (!reqResUser || !reqResUser.email) {
+      throw new InternalServerErrorException(
+        'La respuesta de ReqRes no contiene los datos del usuario esperados',
+      );
+    }
+
     // 3. Save to Local DB
     const savedUser = await this.prisma.user.create({
       data: {
@@ -91,7 +97,7 @@ export class UsersService {
         firstName: reqResUser.first_name,
         lastName: reqResUser.last_name,
         avatar: reqResUser.avatar,
-        role: id === 1 ? 'ADMIN' : reqResUser.role,
+        role: id === 1 ? 'ADMIN' : 'USER',
       },
     });
 
