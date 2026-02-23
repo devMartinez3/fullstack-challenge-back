@@ -1,0 +1,21 @@
+service: backend-challenge-api
+
+provider:
+  name: aws
+  runtime: nodejs24.x
+  region: us-east-2
+  environment:
+    DATABASE_URL: ${env:DATABASE_URL}
+    PORT: ${env:PORT}
+    SECRET_KEY: ${env:SECRET_KEY}
+    REQRES_URL: ${env:REQRES_URL}
+
+functions:
+  api:
+    handler: src/lambda.handler # Punto de entrada que crearemos
+    events:
+      - httpApi: '*'
+
+plugins:
+  - serverless-plugin-typescript
+  - serverless-offline
