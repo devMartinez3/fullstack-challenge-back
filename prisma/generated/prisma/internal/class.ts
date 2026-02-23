@@ -23,7 +23,7 @@ const config: runtime.GetPrismaClientConfig = {
       "value": "prisma-client"
     },
     "output": {
-      "value": "C:\\Projects\\pruebas-tecnicas\\fullstack-challenge bk\\back-challenge\\prisma\\generated\\prisma",
+      "value": "C:\\Projects\\pruebas-tecnicas\\repo-challenge\\fullstack-challenge-back\\prisma\\generated\\prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -37,7 +37,7 @@ const config: runtime.GetPrismaClientConfig = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\Projects\\pruebas-tecnicas\\fullstack-challenge bk\\back-challenge\\prisma\\schema.prisma",
+    "sourceFilePath": "C:\\Projects\\pruebas-tecnicas\\repo-challenge\\fullstack-challenge-back\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativePath": "../..",
