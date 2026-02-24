@@ -38,12 +38,15 @@ export class AllExceptionsFilter implements ExceptionFilter {
           ? resObj.message[0]
           : resObj.message;
       }
+      this.logger.warn(`[HTTP ${httpStatus}] ${message}`);
     } else if (exception instanceof Error) {
       this.logger.error(
         `[UnhandledError] ${exception.message}`,
         exception.stack,
       );
       message = exception.message;
+    } else {
+      this.logger.error('[UnhandledError] Unknown exception', String(exception));
     }
 
     const responseBody = ApiResponseDto.error(message, httpStatus);

@@ -1,21 +1,46 @@
 service: backend-challenge-api
 
+useDotenv: true
+
+package:
+  individually: true
+  patterns:
+    - 'prisma/generated/prisma/libquery_engine-rhel-openssl-3.0.x.so.node'
+    - '!**/*.md'
+    - '!**/*.map'
+
 provider:
   name: aws
-  runtime: nodejs24.x
+  runtime: nodejs20.x
   region: us-east-2
+  stage: ${opt:stage, 'dev'}
   environment:
     DATABASE_URL: ${env:DATABASE_URL}
     PORT: ${env:PORT}
     SECRET_KEY: ${env:SECRET_KEY}
     REQRES_URL: ${env:REQRES_URL}
+    PRISMA_QUERY_ENGINE_LIBRARY: '/var/task/prisma/generated/prisma/libquery_engine-rhel-openssl-3.0.x.so.node'
 
 functions:
   api:
-    handler: src/lambda.handler # Punto de entrada que crearemos
+    handler: dist/src/lambda.handler
+    timeout: 6
     events:
       - httpApi: '*'
+    vpc:
+      securityGroupIds:
+        - ${env:LAMBDA_SECURITY_GROUP_ID}
+      subnetIds:
+        - ${env:VPC_SUBNET_ID_1}
+        - ${env:VPC_SUBNET_ID_2}
 
 plugins:
-  - serverless-plugin-typescript
+  - serverless-esbuild
   - serverless-offline
+
+custom:
+  esbuild:
+    config: ./esbuild.config.js
+
+build:
+  esbuild: false

@@ -7,9 +7,8 @@ export class LoggerMiddleware implements NestMiddleware {
   private readonly logger = new Logger('HTTP');
 
   use(req: Request, res: Response, next: NextFunction) {
-    // Generate a unique request ID
     const requestId = randomUUID();
-    req['reqId'] = requestId; // Attach to request object
+    req['reqId'] = requestId;
 
     res.setHeader('X-Request-Id', requestId);
 

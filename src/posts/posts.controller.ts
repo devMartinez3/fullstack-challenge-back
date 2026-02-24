@@ -59,9 +59,6 @@ export class PostsController {
     };
   }> {
     const authorUserId = userId ? parseInt(userId, 10) : undefined;
-    if (userId && isNaN(authorUserId as number)) {
-      // Si userId no es un número válido, no filtramos pero podríamos lanzar error. Handleamos con pasarlo undefined o NaNs
-    }
     return this.postsService.findAll(page, limit, authorUserId || undefined);
   }
 

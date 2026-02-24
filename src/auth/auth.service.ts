@@ -22,22 +22,30 @@ export class AuthService {
   async login(loginDto: LoginDto): Promise<LoginResponseDto> {
     const { email, password } = loginDto;
     const apiKey = this.configService.get<string>('SECRET_KEY');
+    const baseUrl = this.reqresUrl || this.configService.get<string>('REQRES_URL');
 
-    // Using RxJS firstValueFrom to convert the observable to a Promise
-    const loginResponse = await firstValueFrom(
+    if (!baseUrl) {
+      this.logger.error('REQRES_URL is not set');
+      throw new Error('REQRES_URL is not configured');
+    }
+
+    try {
+      const loginResponse = await firstValueFrom(
       this.httpService
         .post<{
           token: string;
         }>(
-          `${this.reqresUrl}/login`,
+          `${baseUrl}/login`,
           { email, password },
-          { headers: { 'x-api-key': apiKey } },
+          { headers: { 'x-api-key': apiKey }, timeout: 4000 },
         )
         .pipe(
           catchError((error: AxiosError) => {
+            const status = error.response?.status;
+            const code = error.code || 'UNKNOWN';
             this.logger.error(
-              `Error from ReqRes: ${error.message}`,
-              error.stack,
+              `ReqRes login failed: ${error.message} | code=${code} | status=${status} | url=${baseUrl}/login`,
+              (error.response?.data ? JSON.stringify(error.response.data) : error.stack) ?? '',
             );
             throw new UnauthorizedException(
               'Credenciales inválidas proporcionadas por ReqRes',
@@ -46,8 +54,6 @@ export class AuthService {
         ),
     );
 
-    // After successful login, we need to fetch user details to send to the frontend
-    // We first check our local database to get the real 'role'
     let matchedUser: any = null;
 
     try {
@@ -62,14 +68,12 @@ export class AuthService {
           first_name: dbUser.firstName,
           last_name: dbUser.lastName,
           avatar: dbUser.avatar,
-          role: dbUser.role, // Important!
+          role: dbUser.role,
         };
       } else {
-        // Since ReqRes doesn't return user details on login, we'll try to find the user in the users list
-        // First page
         const usersResponse = await firstValueFrom(
           this.httpService.get<{ data: any[] }>(
-            `${this.reqresUrl}/users?page=1`,
+            `${baseUrl}/users?page=1`,
             {
               headers: { 'x-api-key': apiKey },
             },
@@ -77,11 +81,10 @@ export class AuthService {
         );
         matchedUser = usersResponse.data.data.find((u) => u.email === email);
 
-        // Second page if not found
         if (!matchedUser) {
           const usersResponsePage2 = await firstValueFrom(
             this.httpService.get<{ data: any[] }>(
-              `${this.reqresUrl}/users?page=2`,
+              `${baseUrl}/users?page=2`,
               {
                 headers: { 'x-api-key': apiKey },
               },
@@ -93,18 +96,20 @@ export class AuthService {
         }
       }
     } catch (e) {
-      this.logger.error('Error fetching user details after login');
+      this.logger.error(
+        'Error fetching user details after login',
+        e instanceof Error ? e.stack : String(e),
+      );
     }
 
     if (!matchedUser) {
-      // Fallback data if user not found in the first two pages
       matchedUser = {
         id: 0,
         email: email,
         first_name: email.split('@')[0],
         last_name: '',
         avatar: 'https://reqres.in/img/faces/1-image.jpg',
-        role: 'USER', // Default fallback
+        role: 'USER',
       };
     }
 
@@ -112,5 +117,13 @@ export class AuthService {
       token: loginResponse.data.token,
       user: matchedUser,
     };
+    } catch (err) {
+      if (err instanceof UnauthorizedException) throw err;
+      this.logger.error(
+        'Login unexpected error',
+        err instanceof Error ? err.stack : String(err),
+      );
+      throw err;
+    }
   }
 }

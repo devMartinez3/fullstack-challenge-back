@@ -27,7 +27,6 @@ export class PostsService {
       };
     }>
   > {
-    // Verify that the user exists first to provide a better error message if missing
     const user = await this.prisma.user.findUnique({
       where: { id: createPostDto.authorUserId },
     });
@@ -126,7 +125,7 @@ export class PostsService {
   }
 
   async update(id: number, updatePostDto: UpdatePostDto): Promise<Post> {
-    await this.findOne(id); // Ensure it exists first
+    await this.findOne(id);
 
     return this.prisma.post.update({
       where: { id },
@@ -135,7 +134,7 @@ export class PostsService {
   }
 
   async remove(id: number): Promise<Post> {
-    await this.findOne(id); // Ensure it exists first
+    await this.findOne(id);
 
     return this.prisma.post.delete({
       where: { id },

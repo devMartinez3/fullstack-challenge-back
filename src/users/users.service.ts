@@ -49,7 +49,6 @@ export class UsersService {
     const reqresUrl = this.configService.get<string>('REQRES_URL');
     const apiKey = this.configService.get<string>('SECRET_KEY');
 
-    // 1. Validate if user already exists
     const existingUser = await this.prisma.user.findUnique({
       where: { id },
     });
@@ -60,7 +59,6 @@ export class UsersService {
       );
     }
 
-    // 2. Fetch from ReqRes
     const response = await firstValueFrom(
       this.httpService
         .get<ReqResSingleResponse>(`${reqresUrl}/users/${id}`, {
@@ -89,7 +87,6 @@ export class UsersService {
       );
     }
 
-    // 3. Save to Local DB
     const savedUser = await this.prisma.user.create({
       data: {
         id: reqResUser.id,
@@ -163,7 +160,6 @@ export class UsersService {
   }
 
   async deleteSavedUser(id: number, adminId: number): Promise<User> {
-    // 1. Validate that the requesting user exists and is an ADMIN
     const adminUser = await this.getSavedUserById(adminId);
     if (!adminUser || adminUser.role !== 'ADMIN') {
       throw new ForbiddenException(
@@ -177,7 +173,6 @@ export class UsersService {
         `Usuario guardado localmente con ID ${id} no encontrado`,
       );
     }
-    // Delete associated posts first to avoid foreign key constraints errors
     await this.prisma.post.deleteMany({
       where: { authorUserId: id },
     });
